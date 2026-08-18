@@ -1,0 +1,38 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
+
+# Testing / Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Data (too large for git)
+data/*.csv
+
+# Trained models (reproducible via pipeline)
+models/*.pkl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Codegraph (local index)
+.codegraph/
+
+# Agents (local config)
+.agents/
