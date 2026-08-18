@@ -1,7 +1,8 @@
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
@@ -23,6 +24,43 @@ def save_confusion_matrix(y_true, y_pred, title, filename):
     plt.ylabel('Actual')
     plt.xlabel('Predicted')
     plt.title(title)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=150)
+    plt.close()
+
+def save_roc_curve(models_dict, X_test, y_test, title, filename):
+    plt.figure(figsize=(6, 4.5))
+    for name, model in models_dict.items():
+        if hasattr(model, "predict_proba"):
+            y_score = model.predict_proba(X_test)[:, 1]
+        else:
+            y_score = model.decision_function(X_test)
+        fpr, tpr, _ = roc_curve(y_test, y_score)
+        roc_auc = auc(fpr, tpr)
+        plt.plot(fpr, tpr, lw=2, label=f'{name} (AUC = {roc_auc:.2f})')
+    
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(title)
+    plt.legend(loc="lower right")
+    plt.tight_layout()
+    plt.savefig(filename, dpi=150)
+    plt.close()
+
+def save_feature_importance(model, feature_names, title, filename):
+    importances = model.feature_importances_
+    indices = np.argsort(importances)[::-1][:10]
+    top_features = [feature_names[i] for i in indices]
+    top_importances = importances[indices]
+    
+    plt.figure(figsize=(6, 4.5))
+    sns.barplot(x=top_importances, y=top_features, palette="viridis")
+    plt.title(title)
+    plt.xlabel('Relative Importance')
+    plt.ylabel('Feature')
     plt.tight_layout()
     plt.savefig(filename, dpi=150)
     plt.close()
@@ -84,6 +122,7 @@ def build_pdf_report():
     
     print("Loading data...")
     X_train, X_test, y_train, y_test = load_and_preprocess_data(data_path)
+    feature_names = X_train.columns.tolist()
     
     # 1. Baseline Random Forest
     print("Training Baseline Random Forest...")
@@ -94,6 +133,8 @@ def build_pdf_report():
     rf_report = classification_report(y_test, rf_pred, output_dict=True)
     rf_cm_path = os.path.join(plots_dir, "rf_cm.png")
     save_confusion_matrix(y_test, rf_pred, "Baseline Random Forest", rf_cm_path)
+    rf_fi_path = os.path.join(plots_dir, "rf_fi.png")
+    save_feature_importance(rf_model, feature_names, "Top 10 Feature Importances", rf_fi_path)
     
     # 2. Balanced Logistic Regression
     print("Training Balanced Logistic Regression...")
@@ -127,6 +168,14 @@ def build_pdf_report():
     mlp_cm_path = os.path.join(plots_dir, "mlp_cm.png")
     save_confusion_matrix(y_test, mlp_pred, "Deep Learning (MLP Neural Network)", mlp_cm_path)
     
+    models_dict = {
+        "Random Forest": rf_model,
+        "Balanced LR": lr_model,
+        "MLP NN": mlp_model
+    }
+    roc_path = os.path.join(plots_dir, "roc_curve.png")
+    save_roc_curve(models_dict, X_test, y_test, "ROC Curve Comparison", roc_path)
+    
     # Setup PDF
     doc = SimpleDocTemplate(report_path, pagesize=letter, 
                             rightMargin=50, leftMargin=50, 
@@ -159,9 +208,9 @@ def build_pdf_report():
     
     # --- Executive Summary ---
     elements.append(Paragraph("Executive Summary", styles['CustomSectionHeader']))
-    summary_text = """This report compares three machine learning architectures for predicting customer churn. 
-    The business objective is to maximize the identification of at-risk customers (Recall for Churners) to enable proactive retention campaigns. 
-    We evaluate a baseline Random Forest classifier, a class-weighted Logistic Regression model, and an advanced Deep Learning architecture (Multi-Layer Perceptron)."""
+    summary_text = """This report provides a detailed comparative analysis of three machine learning architectures for predicting customer churn. 
+    The primary business objective is to maximize the identification of at-risk customers (Recall for Churners) to enable proactive retention campaigns. 
+    We evaluate a baseline Random Forest classifier, a class-weighted Logistic Regression model, and an advanced Deep Learning architecture (Multi-Layer Perceptron). The analysis includes feature importance, confusion matrices, and ROC-AUC comparisons to offer a comprehensive view of model performance."""
     elements.append(Paragraph(summary_text, styles['CustomBodyText']))
     
     # --- Model 1: Baseline ---
@@ -173,6 +222,12 @@ def build_pdf_report():
     elements.append(create_metric_table(rf_report))
     elements.append(Spacer(1, 15))
     elements.append(Image(rf_cm_path, width=300, height=240))
+    
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("Feature Importance Analysis", styles['CustomSectionHeader']))
+    elements.append(Paragraph("The Random Forest model allows us to extract the most critical features driving customer churn. The chart below illustrates the top 10 factors influencing the model's decisions.", styles['CustomBodyText']))
+    elements.append(Spacer(1, 10))
+    elements.append(Image(rf_fi_path, width=350, height=262))
     
     elements.append(PageBreak())
     
@@ -197,6 +252,14 @@ def build_pdf_report():
     elements.append(create_metric_table(mlp_report))
     elements.append(Spacer(1, 15))
     elements.append(Image(mlp_cm_path, width=300, height=240))
+    
+    elements.append(PageBreak())
+    
+    # --- Model Comparison (ROC-AUC) ---
+    elements.append(Paragraph("Model Comparison: ROC-AUC", styles['CustomSectionHeader']))
+    elements.append(Paragraph("The Receiver Operating Characteristic (ROC) curve below compares the true positive rate versus the false positive rate across all three models at various threshold settings. The Area Under the Curve (AUC) summarizes the overall performance, where a value closer to 1.0 indicates a superior model.", styles['CustomBodyText']))
+    elements.append(Spacer(1, 15))
+    elements.append(Image(roc_path, width=400, height=300))
     
     # --- Conclusion ---
     elements.append(Paragraph("Strategic Recommendation", styles['CustomSectionHeader']))
