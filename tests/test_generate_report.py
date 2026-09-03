@@ -12,7 +12,7 @@ from generate_report import (
     save_roc_curve,
     save_feature_importance,
     create_metric_table,
-    header_footer,
+    ieee_header_footer,
 )
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -118,9 +118,9 @@ class TestCreateMetricTable:
         assert len(table._cellvalues) == 5
 
 
-class TestHeaderFooter:
-    """Tests for the header_footer canvas callback."""
+class TestIEEEHeaderFooter:
+    """Tests for the ieee_header_footer canvas callback."""
 
-    def test_header_footer_callable(self):
-        """Verify header_footer is callable (it's used as a callback by reportlab)."""
-        assert callable(header_footer)
+    def test_ieee_header_footer_callable(self):
+        """Verify ieee_header_footer is callable (it's used as a callback by reportlab)."""
+        assert callable(ieee_header_footer)

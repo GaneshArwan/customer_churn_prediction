@@ -4,9 +4,11 @@
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.2%2B-F7931E?logo=scikit-learn&logoColor=white)
 ![Deep Learning](https://img.shields.io/badge/Deep%20Learning-MLP-blue?logo=keras&logoColor=white)
+![Coverage](https://img.shields.io/badge/Coverage-44%25-yellow)
+![Tests](https://img.shields.io/badge/Tests-21%20passed-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-A baseline Random Forest catches **48% of churning customers**. A balanced Logistic Regression catches **79%**. This repo ships the pipeline that proves it — data fetch, preprocessing, three-model comparison, and a PDF research report, all in one `python` command.
+A baseline Random Forest catches **48% of churning customers**. A balanced Logistic Regression catches **79%**. This repo ships the pipeline that proves it — data fetch, preprocessing, three-model comparison, and an **IEEE-formatted PDF research paper**, all in one `python` command.
 
 ## Problem Statement
 Which customers are most likely to cancel their subscription, and what factors drive churn?
@@ -20,7 +22,7 @@ Which customers are most likely to cancel their subscription, and what factors d
 1. **Data Cleaning & EDA** — Cleans nulls, generates distribution, tenure, charges, and contract plots.
 2. **Feature Engineering** — Encodes categorical variables, scales numerical variables using `StandardScaler`, and splits the data 80/20.
 3. **Modeling** — Compares 6 model variants (Random Forest, Logistic Regression, XGBoost, MLP Neural Network). Uses hyperparameter tuning and class weighting to address the 73/27 class imbalance.
-4. **Evaluation** — Evaluates using Precision, Recall, F1-Score, and AUC-ROC, generating confusion matrices and a comprehensive PDF report.
+4. **Evaluation** — Evaluates using Precision, Recall, F1-Score, and AUC-ROC, generating confusion matrices and a comprehensive IEEE-format PDF report.
 
 ## Key Results
 | Model | Accuracy | Churn Precision | Churn Recall | Churn F1 |
@@ -32,7 +34,7 @@ Which customers are most likely to cancel their subscription, and what factors d
 ## Key Findings
 1. A baseline Random Forest looks great on paper (78.5% accuracy) but silently ignores half the customers who are about to leave (48% recall).
 2. The balanced Logistic Regression model trades 5 points of overall accuracy to catch **31% more churners** (79% recall) than the baseline.
-3. **Business Implication:** Accuracy is a vanity metric for imbalanced churn data. By prioritizing Recall through class weights, the business can accurately target the majority of at-risk customers for proactive retention campaigns.
+3. **Business Implication:** Accuracy is a vanity metric for imbalanced churn data. By prioritizing Recall through class weights, the business can accurately target the majority of at-risk customers for proactive retention campaigns, yielding a projected incremental profit of ~\$83,950 per 1,409 customers evaluated.
 
 ## How to Run
 
@@ -42,8 +44,25 @@ python src/fetch_data.py           # pulls Telco dataset → data/
 python src/eda.py                  # EDA plots → plots/
 python src/train_model.py          # trains model → models/
 python src/evaluate.py             # classification report + confusion matrix
-python src/generate_report.py      # 3-model comparison → churn_prediction_report.pdf
+python src/generate_report.py      # 3-model comparison → churn_prediction_report.pdf (IEEE format)
 ```
+
+## Testing
+
+```bash
+pytest --cov=src --cov-report=term-missing -v
+```
+
+**21 tests** covering preprocessing, model training, evaluation, EDA, data fetching, and report generation helpers. Coverage gate enforced at 40% minimum via CI.
+
+| Module | Coverage |
+|--------|----------|
+| `eda.py` | 97% |
+| `fetch_data.py` | 93% |
+| `data_preprocessing.py` | 77% |
+| `train_model.py` | 50% |
+| `generate_report.py` | 38% |
+| **Total** | **44%** |
 
 ## Files
 - `src/fetch_data.py` — Downloads Telco Customer Churn CSV
@@ -52,11 +71,12 @@ python src/generate_report.py      # 3-model comparison → churn_prediction_rep
 - `src/train_model.py` — Trains balanced `LogisticRegression`, serializes to pickle
 - `src/evaluate.py` — Evaluates test set and saves confusion matrix
 - `src/experiment.py` — Benchmarks 6 model variants
-- `src/generate_report.py` — Trains RF + LR + Deep Learning (MLP) and renders a multi-page PDF
-- `churn_prediction_report.pdf` — The final auto-generated research report
+- `src/generate_report.py` — Trains RF + LR + MLP and renders an IEEE-format two-column PDF
+- `churn_prediction_report.pdf` — The final auto-generated IEEE research paper
+- `tests/` — 21 unit tests with coverage tracking
 
 ## Methodology & Limitations
-The pipeline uses a modular approach, separating data ingestion, preprocessing, training, and evaluation into distinct scripts to ensure reproducibility. It includes automated testing via `pytest` covering preprocessing and model instantiation, integrated directly into a GitHub Actions CI pipeline.
+The pipeline uses a modular approach, separating data ingestion, preprocessing, training, and evaluation into distinct scripts to ensure reproducibility. It includes automated testing via `pytest` (21 tests, 44% coverage) integrated directly into a GitHub Actions CI pipeline with a coverage gate.
 
 One limitation is that the models assume historical patterns will perfectly predict future churn without accounting for external macroeconomic factors or recent uncaptured marketing campaigns. Additionally, the Deep Learning (MLP) model was run without an exhaustive hyperparameter search due to computational limits; a more robust tuning process could potentially improve its recall relative to the balanced Logistic Regression.
 
@@ -72,8 +92,8 @@ graph TD
     D --> E[Serialized Model rf_model.pkl]
     B --> F[Model Benchmarking experiment.py]
     E --> G[Evaluation evaluate.py]
-    F --> H[Research Report generate_report.py]
-    
+    F --> H["IEEE Research Report generate_report.py"]
+
     style A fill:#2C3E50,stroke:#34495E,color:#fff
     style H fill:#27AE60,stroke:#2ECC71,color:#fff
     style E fill:#8E44AD,stroke:#9B59B6,color:#fff
