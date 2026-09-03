@@ -38,31 +38,43 @@ Which customers are most likely to cancel their subscription, and what factors d
 
 ## How to Run
 
+### Option 1: Local Setup
+
 ```bash
 pip install -r requirements.txt
-python src/fetch_data.py           # pulls Telco dataset → data/
-python src/eda.py                  # EDA plots → plots/
-python src/train_model.py          # trains model → models/
+python src/fetch_data.py           # pulls Telco dataset -> data/
+python src/eda.py                  # EDA plots -> plots/
+python src/train_model.py          # trains model -> models/
 python src/evaluate.py             # classification report + confusion matrix
-python src/generate_report.py      # 3-model comparison → churn_prediction_report.pdf (IEEE format)
+python src/generate_report.py      # 3-model comparison -> churn_prediction_report.pdf (IEEE format)
+streamlit run app.py               # runs the interactive dashboard
+```
+
+### Option 2: Docker
+
+```bash
+docker build -t churn-prediction .
+docker run -p 8501:8501 churn-prediction
+# Open http://localhost:8501 in your browser
 ```
 
 ## Testing
 
 ```bash
-pytest --cov=src --cov-report=term-missing -v
+pytest --cov=src --cov=app --cov-report=term-missing -v
 ```
 
-**21 tests** covering preprocessing, model training, evaluation, EDA, data fetching, and report generation helpers. Coverage gate enforced at 40% minimum via CI.
+**23 tests** covering preprocessing, model training, evaluation, EDA, data fetching, Streamlit app logic, and report generation helpers. Coverage gate enforced at 40% minimum via CI.
 
 | Module | Coverage |
 |--------|----------|
+| `app.py` | 88% |
 | `eda.py` | 97% |
 | `fetch_data.py` | 93% |
 | `data_preprocessing.py` | 77% |
 | `train_model.py` | 50% |
-| `generate_report.py` | 38% |
-| **Total** | **44%** |
+| `generate_report.py` | 42% |
+| **Total** | **56%** |
 
 ## Files
 - `src/fetch_data.py` — Downloads Telco Customer Churn CSV
