@@ -25,7 +25,7 @@ def load_and_preprocess_data(file_path):
     y = le.fit_transform(y) # Yes -> 1, No -> 0
     
     # Get categorical and numerical columns
-    categorical_cols = X.select_dtypes(include=['object']).columns
+    categorical_cols = X.select_dtypes(include=['object', 'string']).columns
     numerical_cols = X.select_dtypes(include=['int64', 'float64']).columns
     
     # One-hot encode categorical variables
