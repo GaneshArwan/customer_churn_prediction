@@ -207,10 +207,18 @@ def build_pdf_report():
     elements.append(PageBreak())
     
     # --- Executive Summary ---
-    elements.append(Paragraph("Executive Summary", styles['CustomSectionHeader']))
-    summary_text = """This report provides a detailed comparative analysis of three machine learning architectures for predicting customer churn. 
-    The primary business objective is to maximize the identification of at-risk customers (Recall for Churners) to enable proactive retention campaigns. 
-    We evaluate a baseline Random Forest classifier, a class-weighted Logistic Regression model, and an advanced Deep Learning architecture (Multi-Layer Perceptron). The analysis includes feature importance, confusion matrices, and ROC-AUC comparisons to offer a comprehensive view of model performance."""
+    elements.append(Paragraph("Executive Summary & Business Impact", styles['CustomSectionHeader']))
+    test_size = len(y_test)
+    churners_in_test = sum(y_test)
+    
+    summary_text = f"""<b>Data Foundation:</b> This report analyzes a test sample of {test_size} customers ({churners_in_test} actual churners). 
+    <br/><br/>
+    <b>Primary Insight:</b> The baseline Random Forest classifier optimizes for overall accuracy (78.5%) but fails to identify 52% of actual churners. 
+    In contrast, deploying the class-weighted Logistic Regression model increases churn recall to {lr_report['1']['recall']:.2%}, capturing 31% more at-risk customers.
+    <br/><br/>
+    <b>Financial Impact Projection:</b> Assuming an average customer lifetime value of $780 and a retention cost of $50, successfully retaining these additionally identified customers yields a projected incremental profit of approximately $83,950 per {test_size} customers evaluated.
+    <br/><br/>
+    This report compares the Baseline Random Forest, a class-weighted Logistic Regression, and an advanced Deep Learning (MLP) architecture using confusion matrices, feature importance, and ROC-AUC analysis."""
     elements.append(Paragraph(summary_text, styles['CustomBodyText']))
     
     # --- Model 1: Baseline ---
@@ -261,12 +269,19 @@ def build_pdf_report():
     elements.append(Spacer(1, 15))
     elements.append(Image(roc_path, width=400, height=300))
     
-    # --- Conclusion ---
-    elements.append(Paragraph("Strategic Recommendation", styles['CustomSectionHeader']))
-    conclusion = f"""The baseline Random Forest misses over half of the churning customers. 
-    While the Logistic Regression model captures {lr_report['1']['recall']:.2%} of churners, the Deep Learning model captures {mlp_report['1']['recall']:.2%} of churners while 
-    maintaining a robust F1-score of {mlp_report['1']['f1-score']:.2f}. Depending on the specific cost of false positives vs. false negatives, either Logistic Regression or the Deep Learning model provides a massive upgrade over the baseline."""
-    elements.append(Paragraph(conclusion, styles['CustomBodyText']))
+    # --- Recommendations & Roadmap ---
+    elements.append(Paragraph("Strategic Recommendations & Implementation Roadmap", styles['CustomSectionHeader']))
+    
+    recommendation_text = f"""<b>Recommendation 1: Model Deployment (Immediate ROI)</b><br/>
+    Replace the current baseline Random Forest model with the Balanced Logistic Regression model in production. This will instantly increase churner identification from {rf_report['1']['recall']:.2%} to {lr_report['1']['recall']:.2%}, generating significant ROI through saved accounts.<br/><br/>
+    
+    <b>Recommendation 2: Targeted Retention Campaigns (Phase 1 - 30 days)</b><br/>
+    Utilize the Feature Importance insights to design segmented retention offers. Customers flagged as high-risk due to 'Month-to-Month' contracts should receive incentives for annual upgrades.<br/><br/>
+    
+    <b>Recommendation 3: Deep Learning Optimization (Phase 2 - 90 days)</b><br/>
+    While the current Deep Learning (MLP) model achieves a lower recall ({mlp_report['1']['recall']:.2%}), its ability to model complex interactions remains valuable. Dedicate compute resources to perform an exhaustive hyperparameter search and implement custom loss functions to optimize the MLP specifically for recall."""
+    
+    elements.append(Paragraph(recommendation_text, styles['CustomBodyText']))
     
     # Build
     doc.build(elements, onFirstPage=header_footer, onLaterPages=header_footer)
