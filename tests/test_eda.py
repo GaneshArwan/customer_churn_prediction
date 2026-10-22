@@ -43,13 +43,14 @@ class TestEDA:
 
     def test_eda_generates_all_plots(self, eda_data_env, monkeypatch):
         """Verify eda.main() generates the 4 expected plot files."""
-        # eda.main() does: base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        # We need abspath to return <tmp>/src/eda.py, so dirname(dirname(...)) yields <tmp>
+        # eda.main() resolves its base directory via:
+        #   base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Patch the module's __file__ attribute so abspath(__file__) points
+        # into the tmp tree, without replacing os.path.abspath globally
+        # (which would break matplotlib's internal font resolution).
+        import eda
         fake_script = str(eda_data_env / "src" / "eda.py")
-        monkeypatch.setattr('eda.os.path.abspath', lambda p: fake_script)
-        # dirname is called on the result of abspath, then again. Use real dirname for both.
-        # The real dirname of <tmp>/src/eda.py -> <tmp>/src, then dirname of that -> <tmp>
-        # So the real dirname works perfectly as long as abspath is patched.
+        monkeypatch.setattr(eda, '__file__', fake_script)
 
         eda_main()
 
@@ -83,8 +84,10 @@ class TestEDA:
         csv_path = data_dir / "telco_customer_churn.csv"
         df.to_csv(csv_path, index=False)
 
+        # Patch __file__ instead of os.path.abspath to avoid breaking matplotlib.
+        import eda
         fake_script = str(tmp_path / "src" / "eda.py")
-        monkeypatch.setattr('eda.os.path.abspath', lambda p: fake_script)
+        monkeypatch.setattr(eda, '__file__', fake_script)
 
         eda_main()
 
