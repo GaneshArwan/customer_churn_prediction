@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 jobs:
   security-scan:
     runs-on: ubuntu-latest
@@ -18,10 +21,10 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install bandit safety
+        pip install bandit pip-audit
     - name: Run Bandit (SAST)
       run: |
-        bandit -r src/
-    - name: Run Safety Check
+        bandit -r src/ app.py
+    - name: Run Pip Audit
       run: |
-        safety check -r requirements.txt
+        pip-audit -r requirements.txt

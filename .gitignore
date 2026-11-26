@@ -26,6 +26,7 @@ data/*.csv
 
 # Trained models (reproducible via pipeline)
 models/*.pkl
+models/*.json
 
 # OS
 .DS_Store

@@ -24,8 +24,8 @@ def run_experiments():
         "Random Forest (Baseline)": RandomForestClassifier(n_estimators=100, random_state=42),
         "Random Forest (Balanced)": RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced'),
         "Logistic Regression (Balanced)": LogisticRegression(random_state=42, class_weight='balanced', max_iter=1000),
-        "XGBoost (Default)": XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss'),
-        "XGBoost (Weighted)": XGBClassifier(random_state=42, scale_pos_weight=scale_pos_weight, use_label_encoder=False, eval_metric='logloss')
+        "XGBoost (Default)": XGBClassifier(random_state=42, eval_metric='logloss'),
+        "XGBoost (Weighted)": XGBClassifier(random_state=42, scale_pos_weight=scale_pos_weight, eval_metric='logloss')
     }
     
     print("\n--- Running Experiments ---")
@@ -49,7 +49,7 @@ def run_experiments():
     smote = SMOTE(random_state=42)
     X_train_sm, y_train_sm = smote.fit_resample(X_train, y_train)
     
-    smote_model = XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss')
+    smote_model = XGBClassifier(random_state=42, eval_metric='logloss')
     smote_model.fit(X_train_sm, y_train_sm)
     y_pred_sm = smote_model.predict(X_test)
     f1_sm = f1_score(y_test, y_pred_sm)
