@@ -5,6 +5,7 @@
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.2%2B-F7931E?logo=scikit-learn&logoColor=white)
 ![Coverage](https://img.shields.io/badge/Coverage-66%25-brightgreen)
 ![Tests](https://img.shields.io/badge/Tests-61%20passed-brightgreen)
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://telco-churn-prediction-ganesh.streamlit.app/)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GaneshArwan/customer_churn_prediction/blob/main/notebooks/churn_prediction_walkthrough.ipynb)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -31,8 +32,9 @@ Subscription telecom teams pay far more to acquire a subscriber than to keep one
 
 ## Run
 
-### Option 1: Interactive Dashboard (Local or Streamlit Cloud)
-`app.py` validates inputs with Pydantic v2 (`CustomerProfile`) and loads model weights from JSON (`models/lr_model.json`) without `pickle` or `joblib.load`. If `data/` or `models/` are absent on a fresh clone or cloud container, `app.py` downloads the dataset over HTTPS and trains `models/lr_model.json` on startup.
+### Option 1: Interactive Dashboard (Live Demo or Local)
+- **Live Demo:** https://telco-churn-prediction-ganesh.streamlit.app/
+- `app.py` validates inputs with Pydantic v2 (`CustomerProfile`) and loads model weights from JSON (`models/lr_model.json`) without `pickle` or `joblib.load`. If `data/` or `models/` are absent on a fresh clone or cloud container, `app.py` downloads the dataset over HTTPS and trains `models/lr_model.json` on startup.
 
 ```bash
 pip install -r requirements.txt
