@@ -1,121 +1,97 @@
-# 📉 Customer Churn Prediction (Classification)
+# Customer Churn Prediction
 
 ![CI Pipeline](https://github.com/GaneshArwan/customer_churn_prediction/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.2%2B-F7931E?logo=scikit-learn&logoColor=white)
-![Deep Learning](https://img.shields.io/badge/Deep%20Learning-MLP-blue?logo=keras&logoColor=white)
 ![Coverage](https://img.shields.io/badge/Coverage-66%25-brightgreen)
 ![Tests](https://img.shields.io/badge/Tests-61%20passed-brightgreen)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GaneshArwan/customer_churn_prediction/blob/main/notebooks/churn_prediction_walkthrough.ipynb)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-A baseline Random Forest catches **47.3% of churning customers**. A balanced Logistic Regression catches **79.1%**. This repo ships the pipeline that proves it — data fetch, leak-free preprocessing, three-model comparison with 5-fold stratified CV and calibration analysis, Pydantic-validated Streamlit inference, and an **IEEE-formatted PDF research paper**.
+An unweighted Random Forest catches **47.3%** of churning customers on the IBM Telco dataset. A class-weighted Logistic Regression catches **79.1%** (+31.8 percentage points) on the same 1,407-customer holdout split. This repository contains the preprocessing pipeline, three-model benchmark, Streamlit prediction dashboard, Google Colab walkthrough, and an IEEE-formatted PDF report.
 
-## Problem Statement
-Which customers are most likely to cancel their subscription, and what factors drive churn?
+## Decision Problem
+Subscription telecom teams pay far more to acquire a subscriber than to keep one. Standard classifiers optimized for overall accuracy under-predict churn because only **26.6%** of accounts in the dataset cancel. The objective is to rank churn risk reliably, raise minority-class recall, and quantify net retention profit after campaign outreach costs.
 
-## Dataset
-- **Source:** [Telco Customer Churn (Kaggle)](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
-- **Size:** 7,043 customers × 21 columns (7,032 usable rows after dropping 11 blank `TotalCharges` records; 26.6% churn rate; 5,625 training / 1,407 held-out test rows)
-- **Description:** Binary target (`Churn`: Yes/No). Contains customer demographics, account information, and service usage metrics. The script `src/fetch_data.py` pulls it automatically over HTTPS.
+## Dataset Audit
+- **Source:** [Telco Customer Churn (Kaggle / IBM)](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
+- **Records:** `7,043` raw rows × `21` columns; `11` rows with blank `TotalCharges` (`tenure = 0`) are dropped, leaving `7,032` usable accounts (`26.6%` churn, `73.4%` retained).
+- **Split:** 80/20 (`random_state=42`) into `5,625` training rows and `1,407` holdout test rows (`374` churners). `StandardScaler` is fit on the training split only.
 
-## Approach
-1. **Data Cleaning & EDA** — Cleans nulls, generates distribution, tenure, charges, and contract plots.
-2. **Feature Engineering** — Encodes categorical variables, splits the data 80/20 before fitting `StandardScaler` on training features only, and aligns single-row inference without `drop_first` baseline drift.
-3. **Modeling & Validation** — Benchmarks Random Forest, class-weighted Logistic Regression, early-stopped MLP Neural Network, and XGBoost (`src/experiment.py`), validated with 5-fold stratified CV on the training split.
-4. **Evaluation & Guardrails** — Evaluates Precision, Recall, F1-Score, ROC-AUC, PR-AUC, Brier calibration, and retention campaign ROI; validates Streamlit inputs against `CustomerProfile` (Pydantic v2); loads runtime weights from JSON without pickle (`models/lr_model.json`); and renders an IEEE-format PDF report.
-
-## Key Results
+## Holdout Results (`n = 1,407`)
 | Model | Accuracy | Churn Precision | Churn Recall | Churn F1 | ROC-AUC | PR-AUC | Brier |
-|--------|-------|-------|-------|-------|-------|-------|-------|
+|---|---|---|---|---|---|---|---|
 | Random Forest (Baseline) | 78.5% | 0.63 | 47.3% | 0.54 | 0.815 | 0.605 | 0.148 |
 | Logistic Regression (Balanced) | 73.1% | 0.50 | 79.1% | 0.61 | 0.832 | 0.628 | 0.173 |
-| Deep Learning (MLP) | 78.0% | 0.63 | 43.3% | 0.51 | 0.829 | 0.637 | 0.143 |
+| Deep Learning (MLP, Early Stopping) | 78.0% | 0.63 | 43.3% | 0.51 | 0.829 | 0.637 | 0.143 |
 
-## Key Findings
-1. A baseline Random Forest looks strong on overall accuracy (78.5%) but misses over half the customers about to churn (47.3% recall, 197 false negatives).
-2. Balanced Logistic Regression trades 5.3 points of overall accuracy to catch **31.8 percentage points more churners** (79.1% recall, 296 vs. 177 true positives), with 5-fold CV confirming `0.847 ± 0.013` ROC-AUC and `0.800 ± 0.032` recall.
-3. **Business & Calibration Implication:** Under retention economics of $780 saved LTV and $50 outreach cost per flagged account across 1,407 evaluated customers, Balanced Logistic Regression yields +$12,196 (30% save rate) to +$30,760 (50% save rate) in incremental net profit over the baseline. Post-hoc probability calibration (Platt or isotonic) is recommended before using raw class-weighted probabilities for expected-value spend optimization.
+- **Cross-Validation Stability (5-Fold Stratified on Training Split):** Balanced Logistic Regression achieves `0.847 ± 0.013` ROC-AUC and `0.800 ± 0.032` churn recall, compared to `0.829 ± 0.010` ROC-AUC and `0.500 ± 0.023` recall for the Random Forest baseline.
+- **Retention Campaign Economics ($780 LTV, $50 Outreach Cost):** On `1,407` evaluated accounts, Balanced Logistic Regression identifies `296` true churners (`300` false positives) versus `177` (`106` false positives) for Random Forest. Net profit increases by **+$12,196** at a 30% save rate (breakeven save rate: `12.9%`) and **+$30,760** at a 50% save rate.
+- **Calibration Caveat:** Class reweighting shifts mean predicted probability upward (`0.416` vs. `0.266` prevalence), raising Brier score (`0.173` vs. `0.143` for MLP). Fit Platt scaling or isotonic calibration on a validation fold before thresholding expected-value spend.
 
-## How to Run
+## Run
 
-### Option 1: Local Setup
+### Option 1: Interactive Dashboard (Local or Streamlit Cloud)
+`app.py` validates inputs with Pydantic v2 (`CustomerProfile`) and loads model weights from JSON (`models/lr_model.json`) without `pickle` or `joblib.load`. If `data/` or `models/` are absent on a fresh clone or cloud container, `app.py` downloads the dataset over HTTPS and trains `models/lr_model.json` on startup.
 
 ```bash
 pip install -r requirements.txt
-python src/fetch_data.py           # pulls Telco dataset -> data/
-python src/eda.py                  # EDA plots -> plots/
-python src/train_model.py          # trains model -> models/
-python src/evaluate.py             # classification report + confusion matrix
-python src/generate_report.py      # 3-model comparison -> churn_prediction_report.pdf (IEEE format)
-streamlit run app.py               # runs the interactive dashboard
+streamlit run app.py
 ```
 
-### Option 2: Docker
+### Option 2: Full Pipeline & IEEE PDF Report
+```bash
+python src/fetch_data.py           # pulls Telco CSV over HTTPS -> data/
+python src/eda.py                  # EDA charts -> plots/
+python src/train_model.py          # trains Balanced LR -> models/lr_model.json + models/rf_model.pkl
+python src/evaluate.py             # test metrics + confusion matrix -> plots/confusion_matrix.png
+python src/generate_report.py      # 3-model CV + ROI benchmark -> churn_prediction_report.pdf
+```
 
+### Option 3: Docker
 ```bash
 docker build -t churn-prediction .
 docker run -p 8501:8501 churn-prediction
-# Open http://localhost:8501 in your browser
 ```
 
-## Testing
+### Option 4: Google Colab
+Open [notebooks/churn_prediction_walkthrough.ipynb](notebooks/churn_prediction_walkthrough.ipynb) via the **Open in Colab** badge above to run preprocessing, 5-fold CV, ROC/PR/coefficient plots, and ROI math in browser with zero local setup.
 
+## Tests & CI
 ```bash
 pytest --cov=src --cov=app --cov-report=term-missing -v
 ```
-
-**61 tests** covering input schema validation, leak-free preprocessing, inference column alignment, JSON model serialization equivalence, model training, evaluation end-to-end execution, EDA, HTTPS data fetching, Streamlit app import/execution safety, and IEEE report helpers (PR curves, signed LR coefficients, retention ROI math, page callbacks). CI enforces a 40% minimum coverage gate.
+**62 tests** pass at **66%** total coverage (`40%` minimum gate). GitHub Actions runs a single cached workflow (`.github/workflows/ci.yml`) restricted to code/dependency path changes (`pytest`, `bandit -r src/ app.py`, `pip-audit -r requirements.txt`).
 
 | Module | Coverage |
-|--------|----------|
-| `src/inference.py` | 100% |
+|---|---|
+| `src/inference.py` | 98% |
 | `src/schemas.py` | 100% |
 | `src/eda.py` | 97% |
 | `src/evaluate.py` | 97% |
 | `src/train_model.py` | 96% |
 | `src/fetch_data.py` | 92% |
-| `app.py` | 82% |
+| `app.py` | 78% |
 | `src/data_preprocessing.py` | 80% |
 | `src/generate_report.py` | 47% |
 | `src/experiment.py` | 0% |
 | **Total** | **66%** |
 
-## Files
-- `app.py` — Streamlit prediction dashboard with Pydantic validation and HTML-escaped output
-- `src/schemas.py` — Pydantic v2 `CustomerProfile` input validation schema (`extra="forbid"`, finite bounds)
-- `src/inference.py` — Pure preprocessing, single-row alignment, and zero-pickle JSON model helpers
-- `src/fetch_data.py` — Downloads Telco Customer Churn CSV over HTTPS with timeout and redirect checks
-- `src/data_preprocessing.py` — Cleans data, splits 80/20, and scales training features without leakage
-- `src/eda.py` — Generates distribution and demographic plots
-- `src/train_model.py` — Trains balanced `LogisticRegression`, saves `models/lr_model.json` and `models/rf_model.pkl`
-- `src/evaluate.py` — Evaluates test set from `models/lr_model.json` and saves confusion matrix
-- `src/experiment.py` — Benchmarks 6 model variants
-- `src/generate_report.py` — Trains RF + LR + early-stopped MLP, runs 5-fold CV + ROI economics, and renders an IEEE two-column PDF
-- `churn_prediction_report.pdf` — Auto-generated IEEE research paper
-- `GUARDRAILS.md` — Runtime, ML pipeline, and security guardrails specification
-- `tests/` — 61 unit and regression tests with coverage tracking
+## Repository Layout
+- `app.py` — Streamlit dashboard with Pydantic validation, HTML escaping, and startup artifact bootstrap
+- `src/schemas.py` — `CustomerProfile` input validation schema (`extra="forbid"`, finite bounds)
+- `src/inference.py` — Preprocessing alignment, JSON model serialization, and startup bootstrap
+- `src/data_preprocessing.py` — Data cleaning, 80/20 split, and leak-free `StandardScaler`
+- `src/fetch_data.py` — HTTPS dataset download with timeout and redirect-scheme checks
+- `src/eda.py` — Distribution and tenure/contract EDA charts
+- `src/train_model.py` — Balanced Logistic Regression training script
+- `src/evaluate.py` — Holdout evaluation and confusion matrix generation
+- `src/experiment.py` — 6-variant benchmark including XGBoost and SMOTE
+- `src/generate_report.py` — Builds `churn_prediction_report.pdf` (IEEE two-column paper)
+- `notebooks/churn_prediction_walkthrough.ipynb` — Standalone Colab notebook
+- `GUARDRAILS.md` — Input, ML pipeline, container, and security guardrails
+- `tests/` — Unit and regression test suite
 
-## Methodology & Limitations
-The pipeline separates data ingestion, preprocessing, inference alignment, training, and evaluation into distinct modules for reproducibility. Automated tests via `pytest` (61 tests, 66% coverage) and security scans (`bandit` and `pip-audit`) run in GitHub Actions CI.
-
-One limitation is that the models assume historical patterns predict future churn without accounting for external macroeconomic shifts or uncaptured retention campaigns. Additionally, the Deep Learning (MLP) model used a constrained 5-iteration search without explicit class weighting; broader tuning with focal loss or threshold optimization could improve its recall relative to balanced Logistic Regression.
-
----
-
-### Pipeline Architecture
-
-```mermaid
-graph TD
-    A[Raw Data fetch_data.py] --> B[Data Preprocessing data_preprocessing.py]
-    A --> C[Exploratory Data Analysis eda.py]
-    B --> D[Model Training train_model.py]
-    D --> E[Serialized Model lr_model.json]
-    B --> F[Model Benchmarking experiment.py]
-    E --> G[Evaluation evaluate.py]
-    E --> I[Streamlit Dashboard app.py + schemas.py + inference.py]
-    F --> H["IEEE Research Report generate_report.py"]
-
-    style A fill:#2C3E50,stroke:#34495E,color:#fff
-    style H fill:#27AE60,stroke:#2ECC71,color:#fff
-    style E fill:#8E44AD,stroke:#9B59B6,color:#fff
-```
+## Limitations
+- Predictions rely on cross-sectional snapshot features without macroeconomic indicators or prior outreach history.
+- The MLP tuning budget used 5 random configurations without explicit class weighting; focal loss or threshold tuning could improve its minority-class recall.

@@ -91,3 +91,25 @@ def load_model_json(json_path: str) -> LogisticRegression:
     if "feature_names_in" in payload:
         model.feature_names_in_ = np.array(payload["feature_names_in"], dtype=object)
     return model
+
+
+def ensure_runtime_artifacts(data_path: str, model_json_path: str) -> None:
+    """Download dataset and train balanced Logistic Regression JSON artifact if missing."""
+    try:
+        from src.data_preprocessing import load_and_preprocess_data
+        from src.fetch_data import main as fetch_data_main
+    except ImportError:  # pragma: no cover
+        from data_preprocessing import load_and_preprocess_data
+        from fetch_data import main as fetch_data_main
+
+    if not os.path.exists(data_path):
+        fetch_data_main()
+
+    if os.path.exists(data_path) and not os.path.exists(model_json_path):
+        X_train, _, y_train, _ = load_and_preprocess_data(data_path)
+        model = LogisticRegression(
+            random_state=42, class_weight="balanced", max_iter=1000
+        )
+        model.fit(X_train, y_train)
+        os.makedirs(os.path.dirname(os.path.abspath(model_json_path)), exist_ok=True)
+        save_model_json(model, model_json_path)

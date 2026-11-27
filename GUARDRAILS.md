@@ -16,8 +16,8 @@ This document defines the runtime, machine learning, and security guardrails enf
 
 ## 3. Security & Infrastructure Guardrails
 - **Zero-Pickle Runtime Loading (`src/inference.py`, `src/train_model.py`, `src/evaluate.py`, `app.py`)**: Runtime inference and evaluation load model parameters from JSON (`models/lr_model.json`) via `load_model_json`, avoiding `pickle`/`joblib.load` deserialization (`CWE-502`).
-- **Static Analysis (SAST)**: CI runs `bandit -r src/ app.py` with explicit `permissions: contents: read` on every push and pull request to `main`.
-- **Dependency Vulnerability Scanning**: CI runs `pip-audit -r requirements.txt`.
+- **Static Analysis (SAST)**: CI runs `bandit -r src/ app.py` inside the unified `.github/workflows/ci.yml` workflow (`permissions: contents: read`, path-filtered to code changes to minimize runner bandwidth).
+- **Dependency Vulnerability Scanning**: CI runs `pip-audit -r requirements.txt` inside `.github/workflows/ci.yml`.
 - **HTTPS-Only Data Ingestion (`src/fetch_data.py`)**: Enforces `https` scheme before and after redirects with a 30-second network timeout.
 - **Container Hardening (`Dockerfile`)**: Multi-stage build drops `build-essential` from runtime, keeps `/app` read-only (`root:root`, `a+rX`) for non-root `appuser`, disables Streamlit usage telemetry, and defines a `HEALTHCHECK` probing `/_stcore/health`.
 - **No Side Effects on Import (`app.py`)**: Streamlit UI setup and rendering are isolated inside `main()` under `if __name__ == "__main__":`.

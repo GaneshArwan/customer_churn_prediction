@@ -12,6 +12,7 @@ from sklearn.linear_model import LogisticRegression
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.inference import (
+    ensure_runtime_artifacts,
     load_and_prepare_preprocessor,
     load_model_json,
     preprocess_input,
@@ -68,6 +69,7 @@ def _make_stub_streamlit(called: dict, sidebar_values: dict | None = None):
     stub_st.warning = lambda *args, **kwargs: None
     stub_st.success = lambda *args, **kwargs: None
     stub_st.image = lambda *args, **kwargs: None
+    stub_st.spinner = lambda *args, **kwargs: nullcontext()
     stub_st.stop = lambda: called.__setitem__("stopped", True)
     stub_st.tabs = lambda labels: [nullcontext() for _ in labels]
     stub_st.columns = lambda spec: [
@@ -295,6 +297,7 @@ def test_app_classify_risk_and_main_execution(tmp_path, monkeypatch):
 
 def test_app_main_handles_missing_data_and_model(tmp_path, monkeypatch):
     """Verify app.main() shows generic error messages without crashing when files are missing."""
+    monkeypatch.setenv("CHURN_SKIP_AUTO_BOOTSTRAP", "1")
     called = {"set_page_config": False, "errors": [], "stopped": False}
     stub_st = _make_stub_streamlit(called)
     monkeypatch.setitem(sys.modules, "streamlit", stub_st)
@@ -319,3 +322,22 @@ def test_app_main_handles_missing_data_and_model(tmp_path, monkeypatch):
     assert called["stopped"] is True
     assert len(called["errors"]) == 1
     assert str(tmp_path) not in called["errors"][0]
+
+
+def test_ensure_runtime_artifacts_builds_model_from_existing_csv(tmp_path):
+    """Verify ensure_runtime_artifacts trains and saves lr_model.json from an existing CSV."""
+    rows = []
+    for i in range(20):
+        base = _make_sample_df().iloc[i % 3].to_dict()
+        base["customerID"] = f"{i:03d}"
+        base["Churn"] = "Yes" if i % 3 == 1 else "No"
+        rows.append(base)
+    data_path = tmp_path / "telco_customer_churn.csv"
+    pd.DataFrame(rows).to_csv(data_path, index=False)
+
+    model_json = tmp_path / "models" / "lr_model.json"
+    ensure_runtime_artifacts(str(data_path), str(model_json))
+
+    assert model_json.exists()
+    loaded = load_model_json(str(model_json))
+    assert hasattr(loaded, "predict_proba")

@@ -6,6 +6,7 @@ import streamlit as st
 from pydantic import ValidationError
 
 from src.inference import (
+    ensure_runtime_artifacts,
     load_and_prepare_preprocessor,
     load_model_json,
     preprocess_input,
@@ -67,6 +68,19 @@ def main():
         """,
         unsafe_allow_html=True,
     )
+
+    if os.environ.get("CHURN_SKIP_AUTO_BOOTSTRAP") != "1" and (
+        not os.path.exists(DATA_PATH) or not os.path.exists(MODEL_JSON_PATH)
+    ):
+        try:
+            with st.spinner("Preparing dataset and model..."):
+                ensure_runtime_artifacts(DATA_PATH, MODEL_JSON_PATH)
+        except Exception:
+            st.error(
+                "Unable to prepare dataset or model artifacts. Please retry or check server logs."
+            )
+            st.stop()
+            return
 
     try:
         scaler, cat_cols, num_cols, expected_cols, template_X = _cached_preprocessor(
